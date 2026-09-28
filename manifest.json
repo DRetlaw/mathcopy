@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "MathCopy",
+  "version": "1.0.0",
+  "description": "Copy webpage math formulas as readable Unicode text.",
+  "permissions": ["contextMenus", "activeTab", "scripting", "clipboardWrite"],
+  "host_permissions": ["<all_urls>"],
+  "background": {"service_worker": "background.js"},
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+  "action": {"default_title": "MathCopy"}
+}
