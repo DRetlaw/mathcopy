@@ -71,9 +71,17 @@
   function findSelectedMath() {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return null;
-    let node = selection.anchorNode;
-    if (node?.nodeType === Node.TEXT_NODE) node = node.parentElement;
-    return isMath(node) || node?.closest?.('math') || null;
+    const candidates = [selection.anchorNode, selection.focusNode].filter(Boolean);
+    for (let node of candidates) {
+      if (node?.nodeType === Node.TEXT_NODE) node = node.parentElement;
+      const found = isMath(node);
+      if (found) return found;
+    }
+    const range = selection.getRangeAt(0);
+    const container = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+      ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement;
+    return container?.closest?.('mjx-container, .MathJax, .katex, .katex-display, math, [data-math]') ||
+      container?.querySelector?.('mjx-container, .MathJax, .katex, .katex-display, math, [data-math]') || null;
   }
 
   function getReadableForSelection() {
@@ -128,6 +136,25 @@
     event.preventDefault();
     event.clipboardData?.setData('text/plain', readable);
     if (event.clipboardData) event.clipboardData.setData('text/html', `<span>${readable.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>`);
+  }, true);
+
+
+  // Keyboard fallback: some sites stop or replace the native copy event.
+  // Run at document capture phase so Cmd/Ctrl+C is handled before site handlers.
+  document.addEventListener('keydown', async event => {
+    const isCopy = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'c';
+    if (!isCopy) return;
+    const readable = getReadableForSelection();
+    if (!readable) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const ok = await writeClipboard(readable);
+    if (!ok) {
+      // Fallback to the synchronous copy event path where supported.
+      const copyEvent = new ClipboardEvent('copy', { bubbles: true, cancelable: true });
+      document.dispatchEvent(copyEvent);
+    }
   }, true);
 
   chrome.runtime?.onMessage?.addListener((message) => {
