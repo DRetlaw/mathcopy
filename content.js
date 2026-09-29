@@ -166,4 +166,5 @@
 
 //Added a keydown listener to intercept Cmd+C / Ctrl+C before webpage handlers.
 //Added a direct clipboard write fallback using writeClipboard().
+//
 //Improved selection detection to check both anchor and focus nodes, as well as the selection's common ancestor.
